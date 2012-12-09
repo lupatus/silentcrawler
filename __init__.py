@@ -157,10 +157,10 @@ def wrap(obj, *args, **kwargs) :
         
         def __getitem__(self, item) :
             object.__getattribute__(self, '__crawler').item(item)
-            return self     
+            return self
         
     return Wrapper(obj, *args, **kwargs)
-            
+
 
 if __name__ == '__main__' :
     
@@ -212,11 +212,8 @@ if __name__ == '__main__' :
     def general_callback(value, is_error, error) :
         print 'value:', value
         if is_error :
-            print 'but error occurred:', repr(error)    
+            print 'but error occurred:', repr(error)
     w3 = wrap({'item' : [1,2,3]}, callback = general_callback, success = on_success, failure = on_failure)
     w3['item'][0].value_
     w3.whatever.value_
-
-
-
-            
+    
