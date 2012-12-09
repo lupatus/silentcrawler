@@ -5,7 +5,7 @@ DEBUG_LOG   = 2
 
 def wrap(obj, *args, **kwargs) :
     
-    class Wrapper(object) :
+    class Crawler(object) :
         
         def __init__(self, obj, success=None, failure=None, callback=None,  default=None, debug = DEBUG_NONE, logger_id = 'safecrawler', logger = None) :
             self._obj = obj
@@ -88,6 +88,7 @@ def wrap(obj, *args, **kwargs) :
             self._failed  = False
             self._fail    = self._obj is None
             self._error   = None
+            return self
         
         def attr(self, attr) :
             if not self._check() :
@@ -99,6 +100,7 @@ def wrap(obj, *args, **kwargs) :
                 self._check_value()
             except Exception, e :
                 self._exception(e)
+            return self
             
         def run(self, *args, **kwargs) :
             if not self._check() :
@@ -115,6 +117,7 @@ def wrap(obj, *args, **kwargs) :
                 self._check_value()
             except Exception, e :
                 self._exception(e)
+            return self
             
         def item(self, item) :
             if not self._check() :
@@ -126,36 +129,37 @@ def wrap(obj, *args, **kwargs) :
                 self._check_value()
             except Exception, e :
                 self._exception(e)
+            return self
     
-    class Container(object) :
+    class Wrapper(object) :
         
         def __init__(self, obj, *args, **kwargs) :
-            object.__setattr__(self, '__wrapper', Wrapper(obj, *args, **kwargs))
+            object.__setattr__(self, '__crawler', Crawler(obj, *args, **kwargs))
         
         def reset_(self) :
-            object.__getattribute__(self, '__wrapper').reset()
+            object.__getattribute__(self, '__crawler').reset()
             return self
         
         def wrap_(self, *args, **kwargs) :
-            return Container(object.__getattribute__(self, '__wrapper').get_current(), *args, **kwargs)
+            return Wrapper(object.__getattribute__(self, '__crawler').get_current(), *args, **kwargs)
         
         def __getattr__(self, attr) :
             if attr == 'value_' :
-                return object.__getattribute__(self, '__wrapper').value()
-            if attr == 'wrapper_' :
-                return object.__getattribute__(self, '__wrapper')
-            object.__getattribute__(self, '__wrapper').attr(attr)
+                return object.__getattribute__(self, '__crawler').value()
+            if attr == 'crawler_' :
+                return object.__getattribute__(self, '__crawler')
+            object.__getattribute__(self, '__crawler').attr(attr)
             return self
         
         def __call__(self, *args, **kwargs) :
-            object.__getattribute__(self, '__wrapper').run(*args, **kwargs)
+            object.__getattribute__(self, '__crawler').run(*args, **kwargs)
             return self
         
         def __getitem__(self, item) :
-            object.__getattribute__(self, '__wrapper').item(item)
+            object.__getattribute__(self, '__crawler').item(item)
             return self     
         
-    return Container(obj, *args, **kwargs)
+    return Wrapper(obj, *args, **kwargs)
             
 
 if __name__ == '__main__' :
@@ -196,12 +200,20 @@ if __name__ == '__main__' :
     print w2[10].upper().value_
     print w2.wrapper_.get_path(), ' | ', w2.wrapper_.has_errors(), ' | ', w2.wrapper_.get_error()
     print w2[210].upper().value_
-    print w2.wrapper_.get_path(), ' | ', w2.wrapper_.has_errors(), ' | ', w2.wrapper_.get_error()
+    print w2.crawler_.get_path(), ' | ', w2.wrapper_.has_errors(), ' | ', w2.wrapper_.get_error()
     print w2.reset_().whatever.upper().value_
-    print w2.wrapper_.get_path(), ' | ', w2.wrapper_.has_errors(), ' | ', w2.wrapper_.get_error()
-    def p(msg) :
-        print msg
-    w3 = wrap({'item' : [1,2,3]}, callback = lambda x : p('anyway: %s' % x), success = lambda x : p('success: %s' % x), failure = lambda x : p('failure: %s' % x))
+    print w2.crawler_.get_path(), ' | ', w2.wrapper_.has_errors(), ' | ', w2.wrapper_.get_error()
+    
+    def on_success(value) :
+        print 'success:', value
+    def on_failure(value, error) :
+        print 'value:', value
+        print 'with error:', repr(error)
+    def general_callback(value, is_error, error) :
+        print 'value:', value
+        if is_error :
+            print 'but error occurred:', repr(error)    
+    w3 = wrap({'item' : [1,2,3]}, callback = general_callback, success = on_success, failure = on_failure)
     w3['item'][0].value_
     w3.whatever.value_
 

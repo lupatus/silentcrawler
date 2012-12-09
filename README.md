@@ -38,7 +38,7 @@ wrapped['something']['whatever'].lower()
 # -> value: None
 # -> with error: KeyError('something',)
 
-
+# general callback
 def general_callback(value, is_error, error) :
     print 'value:', value
     if is_error :
@@ -55,22 +55,58 @@ wrapped.reset_()['item']['item2'].value_
 
 **silentcrawler.wrap(obj, \*\*kwargs)**
 
-Function returns _silentcrawler.Container_ object with given object.
+Function returns _silentcrawler.Wrapper_ object with given object.
 
 Keyword arguments:
 
-    *  _callable_ **success** - called on successful retrieval of value `def success(value)`
-    *  _callable_ **failure** - called on failure in value search `def failure(value, exception_object)` 
-    *  _callable_ **callback** - general callback function `def callback(value, is_error, exception_object)`
-    *  _mixed_ **default** - default value
-    *  _int_ **debug** - debug level (see below)
-    *  _str_ **logger_id** - logger id (for `logging.getLogger(logger_id)`), alternative for logger object, by default it is `silentcrawler`
-    *  _Logger_ **logger** - logger object
+  *  _callable_ **success** - called on successful retrieval of value `def success(value)`
+  *  _callable_ **failure** - called on failure in value search `def failure(value, exception_object)` 
+  *  _callable_ **callback** - general callback function `def callback(value, is_error, exception_object)`
+  *  _mixed_ **default** - default value
+  *  _int_ **debug** - debug level (see below)
+  *  _str_ **logger_id** - logger id (for `logging.getLogger(logger_id)`), alternative for logger object, by default it is `silentcrawler`
+  *  _Logger_ **logger** - logger object
 
 Debug:
 
-Possible values are: _DEBUG\_NONE, DEBUG\_PATH, DEBUG\_LOG_
+  *  _silentcrawler.DEBUG\_NONE_ - debug turned off
+  *  _silentcrawler.DEBUG\_PATH_ - crawler will collect path elements, but without sending anything to log. Collected path can be retrieved with `wrapped.wrapper_.get_path()`.
+  *  _silentcrawler.DEBUG\_LOG_ - crawler will display errors in log
 
-    *  _DEBUG\_NONE_ - debug turned off
-    *  _DEBUG\_PATH_ - crawler will collect path elements, but without sending anything to log. Collected path can be retrieved with `wrapped.wrapper_.get_path()`.
-    *  _DEBUG\_LOG_ - crawler will display errors in log
+If debug is set to _DEBUG\_LOG_ then you can set either `logger_id` or pass _Logger_ object into as `logger`.
+
+### silentcrawler.Wrapper
+
+Wrapper accepts any try to call, get attribute or get item and sends it to _Crawler_ object, so you're able to use this object as source object.
+
+**Properties**
+
+  *  **value_** - holds current value, triggers _success,failure_ and _callback_ callbacks
+  *  **crawler_** - _silentcrawler.Crawler_ object
+
+**Methods**
+
+  *  **reset_()** - resets crawler (moves current value pointer to first object)
+  *  **wrap_(\*\*kwargs)** - returns new _silentcrawler.Crawler_ object with current value as base object, for kwyword arguments see _silentcrawler.wrap_
+
+If any of these properties or methods clashes with property or object that you would like to use, you can use _Crawler_ object directly :
+
+```python
+wrapped = silentcrawler.wrap(obj)
+print wrapped.crawler_.attr('reset_').run().value()
+```
+
+
+### silentcrawler.Crawler
+
+**Methods**
+
+  *  **item(key)** - sets current value to `current[key]`
+  *  **attr(name)** - sets current value to `getattr(current, name)`
+  *  **run(\*args, \*\*kwargs)** - sets current value to result of `current(*args, **kwargs)`
+  *  **reset()** - moves current value pointer to first object, resets all errors and path
+  *  **value()** - returns current value, triggers _success,failure_ and _callback_ callbacks
+  *  **get_current()** - returns current value
+  *  **has_errors()** - returns boolean, wherever there was already a problem with retrieving a value
+  *  **get_error()** - returns Exception object (if occured) or `None`
+  *  **get_path()** - returns current path as string if debug is enabled or empty string in other case
